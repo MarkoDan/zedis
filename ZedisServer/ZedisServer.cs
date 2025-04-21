@@ -58,15 +58,21 @@ namespace Zedis
 
         private string ProcessCommand(string line)
         {
-            var parts = line.Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+            var parts = line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0) return "ERR uknown command";
 
             var cmd = parts[0].ToUpper();
 
             return cmd switch
             {
-                "SET" when parts.Length == 3 => _dataStore.Set(parts[1], parts[2]),
+                "SET" when parts.Length >= 3 => _dataStore.Set(parts[1], string.Join(' ', parts.Skip(2))),
                 "GET" when parts.Length == 2 => _dataStore.Get(parts[1]),
+                "DEL" when parts.Length >= 2 => _dataStore.Del(parts.Skip(1)),
+                "EXISTS" when parts.Length >= 2 => _dataStore.Exists(parts.Skip(1)),
+                "INCR" when parts.Length == 2 => _dataStore.Incr(parts[1]),
+                "TYPE" when parts.Length == 2 => _dataStore.Type(parts[1]),
+                "EXPIRE" when parts.Length == 2 => _dataStore.Expire(parts.Skip(1)),
+                "PING" => "PONG",
                 _ => "ERR unknown or invalid command"
             };
         }

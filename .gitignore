@@ -1,0 +1,47 @@
+# Build results
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+
+# Visual Studio and VS Code settings
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider settings
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# NuGet packages (optional if using package restore)
+*.nupkg
+*.snupkg
+packages/
+
+# Dotnet-specific
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.csproj.user
+
+# Environment
+.env
+
+# Publish output
+publish/
+dist/
+
+# Others (you can add Zedis-specific data dumps here)
+dump.zedis
+*.cache
