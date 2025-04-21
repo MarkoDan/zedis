@@ -1,0 +1,65 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zedis", "Zedis.csproj", "{BF836BD8-9951-0B52-6718-BE51D00B84EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZedisServer", "ZedisServer\ZedisServer.csproj", "{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZedisCli", "ZedisCli\ZedisCli.csproj", "{0B01BADE-0E20-4F78-AC98-371F3D3296BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Debug|x64.Build.0 = Debug|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Debug|x86.Build.0 = Debug|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Release|x64.ActiveCfg = Release|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Release|x64.Build.0 = Release|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Release|x86.ActiveCfg = Release|Any CPU
+		{BF836BD8-9951-0B52-6718-BE51D00B84EB}.Release|x86.Build.0 = Release|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Debug|x64.Build.0 = Debug|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Debug|x86.Build.0 = Debug|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Release|x64.ActiveCfg = Release|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Release|x64.Build.0 = Release|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Release|x86.ActiveCfg = Release|Any CPU
+		{A78A652D-2DCE-4237-9D2E-C6DB2272DB98}.Release|x86.Build.0 = Release|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Debug|x64.Build.0 = Debug|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Debug|x86.Build.0 = Debug|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Release|x64.ActiveCfg = Release|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Release|x64.Build.0 = Release|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Release|x86.ActiveCfg = Release|Any CPU
+		{0B01BADE-0E20-4F78-AC98-371F3D3296BC}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7992159A-F736-4725-861D-9145E9872860}
+	EndGlobalSection
+EndGlobal

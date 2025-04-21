@@ -1,0 +1,14 @@
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.AssemblyInfoInputs.cache
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.AssemblyInfo.cs
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.csproj.CoreCompileInputs.cache
+C:\Users\danko\source\repos\Zedis\ZedisServer\bin\Debug\net9.0\ZedisServer.exe
+C:\Users\danko\source\repos\Zedis\ZedisServer\bin\Debug\net9.0\ZedisServer.deps.json
+C:\Users\danko\source\repos\Zedis\ZedisServer\bin\Debug\net9.0\ZedisServer.runtimeconfig.json
+C:\Users\danko\source\repos\Zedis\ZedisServer\bin\Debug\net9.0\ZedisServer.dll
+C:\Users\danko\source\repos\Zedis\ZedisServer\bin\Debug\net9.0\ZedisServer.pdb
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.dll
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\refint\ZedisServer.dll
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.pdb
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ZedisServer.genruntimeconfig.cache
+C:\Users\danko\source\repos\Zedis\ZedisServer\obj\Debug\net9.0\ref\ZedisServer.dll

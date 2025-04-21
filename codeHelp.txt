@@ -1,0 +1,17 @@
+using System.Collections.Concurrent;
+
+public class DataStore
+{
+    private readonly ConcurrentDictionary<string, string> _store = new();
+
+    public string Set(string key, string value)
+    {
+        _store[key] = value;
+        return "OK";
+    }
+
+    public string Get(string key)
+    {
+        return _store.TryGetValue(key, out var value) ? value : "(nil)";
+    }
+}
