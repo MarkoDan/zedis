@@ -20,6 +20,12 @@ namespace Zedis
 
         public string Get(string key)
         {
+            if (_expireStore.TryGetValue(key, out var expiry) && expiry < DateTime.UtcNow)
+            {
+                _store.TryRemove(key, out _);
+                _expireStore.TryRemove(key, out _);
+                return "(nil)";
+            }
             return _store.TryGetValue(key, out var value) ? value : "(nil)";
         }
         
@@ -101,7 +107,31 @@ namespace Zedis
             _expireStore[key] = expireAt;
 
             return "1";
-        } 
+        }
+
+        public string Ttl(string key)
+        {
+            if (!_store.ContainsKey(key))
+                return "-2"; // Key does not exist
+
+            bool exsistsExpiry = _expireStore.TryGetValue(key, out var expiry);
+
+            if (exsistsExpiry && expiry < DateTime.UtcNow)
+            {
+                _store.TryRemove(key, out _);
+                _expireStore.TryRemove(key, out _);
+                return "-2"; // Key existed but is now expired
+            }
+
+            if (exsistsExpiry)
+            {
+                int secondsLeft = (int)(expiry - DateTime.UtcNow).TotalSeconds;
+                return secondsLeft.ToString();
+            }
+
+            return "-1"; // Key exists but has no expiration
+        }
+
         
     }
 }

@@ -45,36 +45,78 @@ namespace Zedis
             var reader = new StreamReader(stream, Encoding.UTF8);
             var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
 
-            // writer.WriteLine("Welcome to Zedis!");
-
-            string? line;
-            while ((line = reader.ReadLine()) != null) 
+            while (true) 
             {
-                var response = ProcessCommand(line);
-                Console.WriteLine($"Received: {line}");
-                writer.WriteLine(response);
+                try
+                {
+                    var parts = ParseRESP(reader);
+                    if (parts == null || parts.Count == 0) 
+                    {
+                        continue;
+                    }
+
+                    var result = ProcessCommand(parts);
+                    var response = ToRESP(result);
+                    writer.Write(response);
+                }
+                catch (Exception ex) 
+                {
+                    writer.Write("-ERR " + ex.Message + "\r\n");
+                    break;
+                }
             }
         }
 
-        private string ProcessCommand(string line)
+        private string ProcessCommand(List<string> parts)
         {
-            var parts = line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 0) return "ERR uknown command";
+            
+            if (parts.Count == 0) return "ERR uknown command";
 
             var cmd = parts[0].ToUpper();
 
             return cmd switch
             {
-                "SET" when parts.Length >= 3 => _dataStore.Set(parts[1], string.Join(' ', parts.Skip(2))),
-                "GET" when parts.Length == 2 => _dataStore.Get(parts[1]),
-                "DEL" when parts.Length >= 2 => _dataStore.Del(parts.Skip(1)),
-                "EXISTS" when parts.Length >= 2 => _dataStore.Exists(parts.Skip(1)),
-                "INCR" when parts.Length == 2 => _dataStore.Incr(parts[1]),
-                "TYPE" when parts.Length == 2 => _dataStore.Type(parts[1]),
-                "EXPIRE" when parts.Length == 2 => _dataStore.Expire(parts.Skip(1)),
+                "SET" when parts.Count >= 3 => _dataStore.Set(parts[1], string.Join(' ', parts.Skip(2))),
+                "GET" when parts.Count == 2 => _dataStore.Get(parts[1]),
+                "DEL" when parts.Count >= 2 => _dataStore.Del(parts.Skip(1)),
+                "EXISTS" when parts.Count >= 2 => _dataStore.Exists(parts.Skip(1)),
+                "INCR" when parts.Count == 2 => _dataStore.Incr(parts[1]),
+                "TYPE" when parts.Count == 2 => _dataStore.Type(parts[1]),
+                "EXPIRE" when parts.Count == 3 => _dataStore.Expire(parts.Skip(1)),
+                "TTL" when parts.Count == 2 => _dataStore.Ttl(parts[1]),
                 "PING" => "PONG",
                 _ => "ERR unknown or invalid command"
             };
+        }
+        
+        //*3\r\n$3\r\nSET\r\n$4\r\nname\r\n$5\r\nMarko\r\n
+        private async Task<List<string>> ParseRESP(StreamReader reader)
+        {
+            string ?line = await reader.ReadLineAsync();
+
+            List<string> parts = new();
+            
+            if (line == null || line.Length == 0 || line[0] != '*') 
+            {
+                throw new Exception("Invalid RESP format - expected array");
+            }
+            
+            
+
+            foreach (var item in line) 
+            {
+
+            }
+
+
+
+
+            return [];
+        }
+
+        private string ToRESP(string result)
+        {
+            return result;
         }
     }
 }
