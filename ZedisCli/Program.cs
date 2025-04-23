@@ -2,6 +2,7 @@
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 public class Program
 {
@@ -30,8 +31,19 @@ public class Program
 
             var result = ToRESP(command);
             writer.Write(result);
+            writer.Flush();
             var response = ParseRESPResponse(reader);
+            if (response == null)
+            {
+                Console.WriteLine("Connection closed by server.");
+                break;
+            }
+
             Console.WriteLine(response);
+
+            if (command.Trim().ToUpper() == "QUIT" && response == "OK"){
+                break;
+            }
         }
 
         writer.Close();
@@ -54,19 +66,19 @@ public class Program
        return sb.ToString();
     }
 
-    public static string ParseRESPResponse(StreamReader reader) 
+    public static string? ParseRESPResponse(StreamReader reader)
     {
         string? line = reader.ReadLine();
-        if (line == null) return "(no response)";
+        if (line == null) return null;
 
-        switch (line[0]) 
+        switch (line[0])
         {
             case '+': return line.Substring(1);
             case ':': return line.Substring(1);
             case '-': return "ERR " + line.Substring(1);
             case '$':
                 if (line == "$-1") return "(nil)";
-                if (int.TryParse(line.Substring(1), out int len)) 
+                if (int.TryParse(line.Substring(1), out int len))
                 {
                     string? data = reader.ReadLine();
                     return data ?? "(nil)";
@@ -76,4 +88,5 @@ public class Program
                 return "(unknown RESP format)";
         }
     }
+
 }

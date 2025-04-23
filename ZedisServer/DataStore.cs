@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Zedis
@@ -130,6 +131,18 @@ namespace Zedis
             }
 
             return "-1"; // Key exists but has no expiration
+        }
+
+        public string Echo(string message) 
+        {
+            return message;
+        }
+
+        public string Save() 
+        {
+            var json = JsonSerializer.Serialize(_store);
+            File.WriteAllText("dump.zedis.json", json);
+            return "OK";
         }
 
         

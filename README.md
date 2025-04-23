@@ -16,14 +16,16 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 - [x] SET, GET, DEL, EXISTS
 - [x] EXPIRE, TTL, INCR, PING, TYPE
 - [x] Zedis CLI client with RESP
+- [X] ECHO
+- [X] QUIT to close client
+- [X] Command logging to file or console
 ```
 
 ### Issue: Add missing base commands
 **Labels:** phase:1-core, enhancement
 ```
-- [ ] ECHO
-- [ ] QUIT to close client
-- [ ] Command logging to file or console
+
+- [] Zedis configuration file
 ```
 
 ---

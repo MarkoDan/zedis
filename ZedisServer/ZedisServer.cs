@@ -50,12 +50,24 @@ namespace Zedis
                 try
                 {
                     List<string> parts = await ParseRESP(reader);
+                    // Command logging to file and console
+                    Console.WriteLine($"[{DateTime.Now}] Command: {string.Join(" ", parts)}");
+                    File.AppendAllText("zedis.log", $"[{DateTime.Now}] Command: {string.Join(" ", parts)}{Environment.NewLine}");
                     if (parts == null || parts.Count == 0) 
                     {
                         continue;
                     }
 
                     var result = ProcessCommand(parts);
+
+                    if (result == "QUIT")
+                    {
+                        await writer.WriteAsync("+OK\r\n");
+                        Console.WriteLine("Client disconnected");
+                        break; // It will also dispose the stream 
+                        
+                    }
+
                     var response = ToRESP(result);
                     await writer.WriteAsync(response);
                 }
@@ -84,7 +96,10 @@ namespace Zedis
                 "TYPE" when parts.Count == 2 => _dataStore.Type(parts[1]),
                 "EXPIRE" when parts.Count == 3 => _dataStore.Expire(parts.Skip(1)),
                 "TTL" when parts.Count == 2 => _dataStore.Ttl(parts[1]),
+                "ECHO" when parts.Count == 2 => _dataStore.Echo(parts[1]),
+                "QUIT" => "QUIT",
                 "PING" => "PONG",
+                "SAVE" => _dataStore.Save(),
                 _ => "ERR unknown or invalid command"
             };
         }
