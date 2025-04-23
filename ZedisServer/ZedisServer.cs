@@ -32,14 +32,14 @@ namespace Zedis
                 var client = _listener.AcceptTcpClient();
                 Console.WriteLine("Client connected");
 
-                Thread thread = new Thread(() => HandleClient(client));
+                Thread thread = new Thread(async () => await HandleClient(client));
                 thread.Start();
 
 
             }
         }
 
-        private void HandleClient(TcpClient client)
+        private async Task HandleClient(TcpClient client)
         {
             using var stream = client.GetStream();
             var reader = new StreamReader(stream, Encoding.UTF8);
@@ -49,7 +49,7 @@ namespace Zedis
             {
                 try
                 {
-                    var parts = ParseRESP(reader);
+                    List<string> parts = await ParseRESP(reader);
                     if (parts == null || parts.Count == 0) 
                     {
                         continue;
@@ -57,7 +57,7 @@ namespace Zedis
 
                     var result = ProcessCommand(parts);
                     var response = ToRESP(result);
-                    writer.Write(response);
+                    await writer.WriteAsync(response);
                 }
                 catch (Exception ex) 
                 {
@@ -92,31 +92,66 @@ namespace Zedis
         //*3\r\n$3\r\nSET\r\n$4\r\nname\r\n$5\r\nMarko\r\n
         private async Task<List<string>> ParseRESP(StreamReader reader)
         {
-            string ?line = await reader.ReadLineAsync();
+            string? firstLine = await reader.ReadLineAsync();
 
             List<string> parts = new();
             
-            if (line == null || line.Length == 0 || line[0] != '*') 
+            if (string.IsNullOrWhiteSpace(firstLine) || firstLine[0] != '*') 
             {
-                throw new Exception("Invalid RESP format - expected array");
-            }
-            
-            
-
-            foreach (var item in line) 
-            {
-
+                throw new Exception("Invalid RESP format: expected array");
             }
 
+            if (!int.TryParse(firstLine.Substring(1), out int count))
+            {
+                throw new Exception("Invalid array length");
+            }
 
+            for (int i = 0; i < count; i++) 
+            {
+                string? sizeLine = await reader.ReadLineAsync();
+                if (sizeLine == null || sizeLine[0] != '$') 
+                {
+                    throw new Exception("invalid bulk string length");
+                }
+                if (!int.TryParse(sizeLine.Substring(1), out int length)) 
+                {
+                    throw new Exception("Invalid bulk string length");
+                }
 
+                string? dataLine = await reader.ReadLineAsync();
+                if (dataLine == null || dataLine.Length != length) 
+                {
+                    throw new Exception("String length mismatch");
+                }
 
-            return [];
+                parts.Add(dataLine);
+
+            }
+            return parts;
+
         }
 
+        //*3\r\n$3\r\nSET\r\n$4\r\nname\r\n$5\r\nMarko\r\n
         private string ToRESP(string result)
         {
-            return result;
+            if (result == "(nil)") 
+            {
+                return "$-1\r\n";
+            }
+            if (result.StartsWith("ERR")) 
+            {
+                return $"-{result}\r\n";
+            }
+            if (result == "OK" || result == "PONG") 
+            {
+                return $"+{result}\r\n";
+            }
+            if (int.TryParse(result, out _)) 
+            {
+                return $":{result}\r\n";
+            }
+
+            return $"${result.Length}\r\n{result}\r\n";
         }
     }
 }
