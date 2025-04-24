@@ -3,11 +3,13 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
 public class Program
 {
     const string LOCALHOST = "127.0.0.1";
-    const int PORT = 6555;
+    const int PORT = 6444;
 
     public static void Main(string[] args)
     {
@@ -87,6 +89,13 @@ public class Program
             default:
                 return "(unknown RESP format)";
         }
+
+    }
+
+    public static List<string> ParseCommandLine(string input) 
+    {
+        var matches = Regex.Matches(input, @"[\""].+?[\""]|[^ ]+");
+        return matches.Select(m => m.Value.Trim('"')).ToList();
     }
 
 }

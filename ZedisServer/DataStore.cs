@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -12,137 +13,218 @@ namespace Zedis
     {
         private readonly ConcurrentDictionary<string, string> _store = new();
         private readonly ConcurrentDictionary<string, DateTime> _expireStore = new();
+        private readonly object _lock = new();
 
         public string Set(string key, string value)
         {
-            _store[key] = value;
-            return "OK";
+            lock (_lock)
+            {
+                _store[key] = value;
+                return "OK";
+            }
         }
 
         public string Get(string key)
         {
-            if (_expireStore.TryGetValue(key, out var expiry) && expiry < DateTime.UtcNow)
+            lock (_lock)
             {
-                _store.TryRemove(key, out _);
-                _expireStore.TryRemove(key, out _);
-                return "(nil)";
+                if (_expireStore.TryGetValue(key, out var expiry) && expiry < DateTime.UtcNow)
+                {
+                    _store.TryRemove(key, out _);
+                    _expireStore.TryRemove(key, out _);
+                    return "(nil)";
+                }
+                return _store.TryGetValue(key, out var value) ? value : "(nil)";
             }
-            return _store.TryGetValue(key, out var value) ? value : "(nil)";
-        }
-        
-        public string Del(IEnumerable<string> keys) 
-        {
-            int count = 0;
-            foreach (string key in keys) 
-            {
-                bool removed = _store.TryRemove(key, out _);
-                if (removed) count++;
-            }
-            return count.ToString();
         }
 
-        public string Exists(IEnumerable<string> keys) 
+        public string Del(IEnumerable<string> keys)
         {
-            int count = 0;
-            foreach (string key in keys) 
+            lock (_lock)
+            {
+                int count = 0;
+                foreach (string key in keys)
+                {
+                    bool removed = _store.TryRemove(key, out _);
+                    if (removed) count++;
+                }
+                return count.ToString();
+            }
+        }
+
+        public string Exists(IEnumerable<string> keys)
+        {
+            lock (_lock)
+            {
+                int count = 0;
+                foreach (string key in keys)
+                {
+                    bool exists = _store.TryGetValue(key, out _);
+                    if (exists) count++;
+                }
+                return count.ToString();
+            }
+        }
+
+        public string Incr(string key)
+        {
+            lock (_lock)
             {
                 bool exists = _store.TryGetValue(key, out _);
-                if (exists) count++;
-            }
-            return count.ToString();
-        }
 
-        public string Incr(string key) 
-        {
-            bool exists = _store.TryGetValue(key, out _);
-            
-            if (exists)
-            {
-                if (Int32.TryParse(_store[key], out int value))
+                if (exists)
                 {
-                    value++;
-                
-                    _store[key] = value.ToString();
+                    if (Int32.TryParse(_store[key], out int value))
+                    {
+                        value++;
 
-                    return value.ToString();
+                        _store[key] = value.ToString();
+
+                        return value.ToString();
+                    }
+                    else
+                    {
+                        return "ERR value is not an integer";
+                    }
+
                 }
-                else{
-                    return "ERR value is not an integer";
+                else
+                {
+                    _store[key] = "1";
+                    return _store[key];
                 }
-                
-            }
-            else{
-                _store[key] = "1";
-                return _store[key];
             }
         }
 
-        public string Type(string key) 
+        public string Type(string key)
         {
-            return _store.ContainsKey(key) ? "string" : "none";
+            lock (_lock)
+            {
+                return _store.ContainsKey(key) ? "string" : "none";
+            }
         }
 
-        public string Expire(IEnumerable<string> parts) 
+        public string Expire(IEnumerable<string> parts)
         {
-            var args = parts.ToList();
-
-            if (args.Count != 2) 
+            lock (_lock)
             {
-                return "ERR wrong number of arguments for 'expire' command";
+                var args = parts.ToList();
+
+                if (args.Count != 2)
+                {
+                    return "ERR wrong number of arguments for 'expire' command";
+                }
+
+                var key = args[0];
+                var success = int.TryParse(args[1], out int seconds);
+
+                if (!success || seconds < 0)
+                {
+                    return "ERR invalid expiration time";
+                }
+
+                if (!_store.ContainsKey(key))
+                {
+                    return "0";
+                }
+
+                var expireAt = DateTime.UtcNow.AddSeconds(seconds);
+                _expireStore[key] = expireAt;
+
+                return "1";
             }
-
-            var key = args[0];
-            var success = int.TryParse(args[1], out int seconds);
-
-            if (!success || seconds < 0) 
-            {
-                return "ERR invalid expiration time"; 
-            }
-
-            if (!_store.ContainsKey(key)) 
-            {
-                return "0";
-            }
-
-            var expireAt = DateTime.UtcNow.AddSeconds(seconds);
-            _expireStore[key] = expireAt;
-
-            return "1";
         }
 
         public string Ttl(string key)
         {
-            if (!_store.ContainsKey(key))
-                return "-2"; // Key does not exist
-
-            bool exsistsExpiry = _expireStore.TryGetValue(key, out var expiry);
-
-            if (exsistsExpiry && expiry < DateTime.UtcNow)
+            lock (_lock)
             {
-                _store.TryRemove(key, out _);
-                _expireStore.TryRemove(key, out _);
-                return "-2"; // Key existed but is now expired
-            }
+                if (!_store.ContainsKey(key))
+                    return "-2"; // Key does not exist
 
-            if (exsistsExpiry)
-            {
-                int secondsLeft = (int)(expiry - DateTime.UtcNow).TotalSeconds;
-                return secondsLeft.ToString();
-            }
+                bool existsExpiry = _expireStore.TryGetValue(key, out var expiry);
 
-            return "-1"; // Key exists but has no expiration
+                if (existsExpiry && expiry < DateTime.UtcNow)
+                {
+                    _store.TryRemove(key, out _);
+                    _expireStore.TryRemove(key, out _);
+                    return "-2"; // Key existed but is now expired
+                }
+
+                if (existsExpiry)
+                {
+                    int secondsLeft = (int)(expiry - DateTime.UtcNow).TotalSeconds;
+                    return secondsLeft.ToString();
+                }
+
+                return "-1"; // Key exists but has no expiration
+            }
         }
 
-        public string Echo(string message) 
+        public string Echo(string message)
         {
-            return message;
+            lock (_lock)
+            {
+                return message;
+            }
         }
 
-        public string Save() 
+        public string Save()
         {
-            var json = JsonSerializer.Serialize(_store);
-            File.WriteAllText("dump.zedis.json", json);
-            return "OK";
+            lock (_lock)
+            {
+                var json = JsonSerializer.Serialize(_store);
+                File.WriteAllText("dump.zedis.json", json);
+                return "OK";
+            }
+        }
+
+        public void Load()
+        {
+            lock (_lock)
+            {
+                if (File.Exists("dump.zedis.json"))
+                {
+                    var json = File.ReadAllText("dump.zedis.json");
+                    var loaded = JsonSerializer.Deserialize<ConcurrentDictionary<string, string>>(json);
+                    if (loaded != null)
+                    {
+                        _store.Clear();
+                        foreach (var kv in loaded)
+                        {
+                            _store[kv.Key] = kv.Value;
+                        }
+                    }
+                }
+            }
+        }
+
+        public string BgSave() 
+        {
+            Task.Run(() => {
+
+                var json = JsonSerializer.Serialize(_store);
+                File.WriteAllText("dump.zedis.json", json);
+            });
+            return "Background saving started";
+        }
+
+        public string Append(string key, string value) 
+        {
+               
+            _store.AddOrUpdate(key, value, (k , existing) => existing + value);
+
+            return _store[key].Length.ToString();
+
+        }
+
+        public string Strlen(string key) 
+        {
+            if (_store.TryGetValue(key, out var value))
+            {
+                return value.Length.ToString();
+            }
+            return "0";
         }
 
         

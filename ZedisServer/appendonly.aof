@@ -1,0 +1,42 @@
+PING
+SET name Marko
+GET name
+DEL name
+GET name
+SET temp hi
+EXPIRE temp 10
+GET temp
+TTL temp
+
+QUIT
+GET name
+SET name Marko
+QUIT
+GET name
+SAVE
+BGSAVE
+CONFIG GET appendonly
+CONIG SET appendonly no
+SET name John
+CONFIG SET appendonly no
+
+SET age 15
+SET mykey Hello
+APPEND mykey World
+APPEND mykey Hello
+APPEND mykey Hello
+GET mykey
+APPEND mykey World
+GET mykey
+APPEND mykey Hello
+APPEND mykey World
+GET mykey
+APPEND mykey Hello
+APPEND mykey World
+GET mykey
+APPEND mykey Hello
+APPEND mykey world
+GET mykey
+SET mykey Hello World
+STRLEN mykey
+STRLEN none

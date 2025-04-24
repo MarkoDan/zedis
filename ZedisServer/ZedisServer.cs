@@ -1,37 +1,70 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Reflection.Metadata;
+using System.Security.Principal;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Zedis
 {
     public class ZedisServer
     {
-        private readonly int _port;
+        private int _port;
         private TcpListener ?_listener;
         private readonly DataStore _dataStore = new DataStore();
+        private readonly Dictionary<string, string> _config = new();
+        private bool _appendOnlyEnabled = true;
         
 
-        public ZedisServer(int port) {
-            
-            _port = port;
-        }
-
+        
         public void Start() 
         {
+            LoadConfig();
+            int defaultPort = 6555;
+            if (_config.TryGetValue("port", out var portValue) && int.TryParse(portValue, out var portFromConfig))
+            {
+                _port = portFromConfig;
+            }
+            else 
+            {
+                _port = defaultPort;
+            }
+
             _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
             Console.WriteLine($"Zedis listening on port {_port}");
+            
+            
+
+            if (_config.TryGetValue("loadstart", out var shouldLoad) && shouldLoad.ToLower() == "yes") 
+            {
+                _dataStore.Load();
+
+                if (File.Exists("appendonly.aof"))
+                {
+                    foreach (var line in File.ReadLines("appendonly.aof"))
+                    {
+                        var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+                        ProcessCommand(parts);
+                    }
+                }
+            }
+            
+                    
 
             while (true) 
             {
                 var client = _listener.AcceptTcpClient();
                 Console.WriteLine("Client connected");
-
+                
                 Thread thread = new Thread(async () => await HandleClient(client));
                 thread.Start();
 
@@ -50,6 +83,11 @@ namespace Zedis
                 try
                 {
                     List<string> parts = await ParseRESP(reader);
+                    // Appending commands in aof file
+                    if (_appendOnlyEnabled) 
+                    {
+                        File.AppendAllText("appendonly.aof", $"{string.Join(" ", parts)}\r\n");
+                    }
                     // Command logging to file and console
                     Console.WriteLine($"[{DateTime.Now}] Command: {string.Join(" ", parts)}");
                     File.AppendAllText("zedis.log", $"[{DateTime.Now}] Command: {string.Join(" ", parts)}{Environment.NewLine}");
@@ -100,6 +138,10 @@ namespace Zedis
                 "QUIT" => "QUIT",
                 "PING" => "PONG",
                 "SAVE" => _dataStore.Save(),
+                "BGSAVE" => _dataStore.BgSave(),
+                "CONFIG" when parts.Count >= 2 => HandleConfig(parts),
+                "APPEND" when parts.Count >=3 => _dataStore.Append(parts[1], string.Join(' ', parts.Skip(2))),
+                "STRLEN" when parts.Count == 2 => _dataStore.Strlen(parts[1]),
                 _ => "ERR unknown or invalid command"
             };
         }
@@ -168,5 +210,62 @@ namespace Zedis
 
             return $"${result.Length}\r\n{result}\r\n";
         }
+
+
+        private void LoadConfig() 
+        {
+            if (!File.Exists("zedis.conf")) return;
+
+            var lines = File.ReadLines("zedis.conf");
+
+            foreach (var line in lines) 
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+
+                var parts = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2) {
+                    
+                    _config[parts[0].ToLower()] = parts[1];
+                }
+            }
+        }
+
+        private string HandleConfig(List<string> parts)
+        {  
+            
+            var cmd = parts[1].ToUpper();
+
+            if (cmd == "GET" && parts.Count == 3) 
+            {
+                var key = parts[2].ToLower();
+                return _config.TryGetValue(key, out var value)
+                    ? $"{key}\n{value}"
+                    : "(nil)";
+            }
+
+            if (cmd == "SET" && parts.Count == 4) 
+            {
+                var key = parts[2].ToLower();
+                var value = parts[3];
+                _config[key] = value;
+
+                if (key == "appendonly"){
+                    _appendOnlyEnabled = value.ToLower() == "yes";
+                }
+                SaveConfig();
+                return "OK";
+            }
+
+            return "ERR invalid CONFIG syntax";
+            
+        }
+
+        private void SaveConfig() 
+        {
+            var lines = _config.Select(kvp => $"{kvp.Key} {kvp.Value}");
+            File.WriteAllLines("zedis.conf", lines);
+        }
+
+        
     }
 }

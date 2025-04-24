@@ -35,16 +35,16 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ### Issue: Basic persistence
 **Labels:** phase:2-persistence, feature
 ```
-- [ ] SAVE to snapshot current store
-- [ ] LOAD data on server startup
-- [ ] BGSAVE background save
+- [X] SAVE to snapshot current store
+- [X] LOAD data on server startup
+- [X] BGSAVE background save
 ```
 
 ### Issue: Append-only log
 **Labels:** phase:2-persistence, enhancement
 ```
-- [ ] AOF persistence
-- [ ] CONFIG GET/SET to manage behavior
+- [X] AOF persistence
+- [X] CONFIG GET/SET to manage behavior
 ```
 
 ---
@@ -54,8 +54,8 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ### Issue: Extended string operations
 **Labels:** phase:3-strings, feature
 ```
-- [ ] APPEND
-- [ ] STRLEN
+- [X] APPEND
+- [X] STRLEN
 - [ ] MSET, MGET
 - [ ] SETEX, SETNX, GETSET
 - [ ] INCRBY, DECR, DECRBY
