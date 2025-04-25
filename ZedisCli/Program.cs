@@ -80,12 +80,34 @@ public class Program
             case '-': return "ERR " + line.Substring(1);
             case '$':
                 if (line == "$-1") return "(nil)";
-                if (int.TryParse(line.Substring(1), out int len))
+                if (int.TryParse(line.Substring(1), out int dataLen))
                 {
                     string? data = reader.ReadLine();
                     return data ?? "(nil)";
                 }
                 return "(invalid bulk)";
+            case '*':
+                if (!int.TryParse(line.Substring(1), out int count))
+                {
+                    return "(invalid array)";
+                }
+                var results = new List<string>();
+                for (int i = 0; i < count; i++) 
+                {
+                    var typeLine = reader.ReadLine();
+                    if (typeLine == null) return "(incomplete array)";
+                    if (typeLine == "$-1")
+                    {
+                        results.Add($"{i + 1}) (nil)");
+                    }
+                    else if (typeLine.StartsWith("$") && int.TryParse(typeLine.Substring(1), out int len))
+                    {
+                        string? val = reader.ReadLine();
+                        results.Add($"{i + 1}) {(val ?? "(nil)")}");
+                    }
+
+                }
+                return string.Join("\n", results);
             default:
                 return "(unknown RESP format)";
         }

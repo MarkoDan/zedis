@@ -40,3 +40,66 @@ GET mykey
 SET mykey Hello World
 STRLEN mykey
 STRLEN none
+GET key1
+GET key2
+MSET key1 Hello key2 World
+GET key1
+GET key2
+SET key1 Hello key2 World
+MGET key1 key2 none
+GET key2
+GET key1
+DEL key1
+DEL key2
+MSET key1 Hello key2 World
+MGET key1 key2 none
+MGET key2
+GET key2
+MSET key1 Hello key2 World
+MGET key1 key2 none
+GET key2
+SET key2 World
+SET key1 Hello
+SET key2 World
+MGET key1 key2
+GET key2
+GET key1
+SET key1 Hello
+SET key2 World
+MGET key1 key2 none
+SET key1 Hello
+SET key2 World
+MGET key1 key2 none
+SET key1 Hello
+SET key2 world
+MGET key1 key2 none
+GET key2
+GET key1
+SET key1 Hello
+SET key2 World
+MGET key1 key2 none
+GET key2
+SET key3 dfsdf
+SET mykey Marko
+EXPIRE mykey 20
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+TTL mykey
+SETEX mykey 20 Hello
+SETEX mykey 20 Hello
+TTL mykey
+TTL mykey
+TTL mykey
+SETNX mykey Hello
+SETNX mykey Hello
+SETNX mykey WOrld
+GEty mykey
+GET mykey

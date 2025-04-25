@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -202,18 +203,24 @@ namespace Zedis
         public string BgSave() 
         {
             Task.Run(() => {
-
-                var json = JsonSerializer.Serialize(_store);
-                File.WriteAllText("dump.zedis.json", json);
+                
+                lock(_lock) 
+                {
+                    var json = JsonSerializer.Serialize(_store);
+                    File.WriteAllText("dump.zedis.json", json);
+                }
+                
             });
             return "Background saving started";
         }
 
         public string Append(string key, string value) 
         {
-               
-            _store.AddOrUpdate(key, value, (k , existing) => existing + value);
-
+            lock(_lock) 
+            {
+                _store.AddOrUpdate(key, value, (k , existing) => existing + value);
+            }
+            
             return _store[key].Length.ToString();
 
         }
@@ -227,6 +234,73 @@ namespace Zedis
             return "0";
         }
 
+        public string MSet(IEnumerable<string> args) 
+        {
+            int count = args.Count();
+
+            if(count % 2 != 0)
+            {
+                return "ERR wrong number of arguments for 'mset' command";
+            }
+
+            List<string> argsList= args.ToList();
+
+            lock(_lock)
+            {
+                for (int i = 0; i < count; i += 2)
+                {
+                    _store[argsList[i]] = argsList[i+1];
+                }
+            }
+        
+            return "OK";   
+        }
+
+        public string MGet(IEnumerable<string> args) 
+        {   
+            var sb = new StringBuilder();
+            int count = 1;
+            
+            foreach (var arg in args) 
+            {   
+                var value = Get(arg);
+                sb.AppendLine($"{count}) {value}");
+                count++;    
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        public string Setex(string key, string seconds, string value)
+        {
+            if (!int.TryParse(seconds, out int secs) || secs < 0)
+            {
+                return "ERR invalid expiration time";
+            }
+
+            lock (_lock)
+            {
+                Set(key, value);
+                _expireStore[key] = DateTime.UtcNow.AddSeconds(secs);
+            }
+
+            return "OK";
+        }
+
+        public string Setnx(string key, string value)
+        {
+            if(_store.TryGetValue(key, out var _))
+            {
+                return "(integer) 0";
+            }
+
+            lock(_lock)
+            {
+                _store[key] = value;
+                return "(integer) 1";
+            }
+            
+        }
         
     }
 }

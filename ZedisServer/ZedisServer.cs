@@ -12,6 +12,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.VisualBasic;
 
 namespace Zedis
 {
@@ -97,17 +98,28 @@ namespace Zedis
                     }
 
                     var result = ProcessCommand(parts);
-
-                    if (result == "QUIT")
+                    
+                    if (result is string str)
                     {
-                        await writer.WriteAsync("+OK\r\n");
-                        Console.WriteLine("Client disconnected");
-                        break; // It will also dispose the stream 
+                        if (str == "QUIT")
+                        {
+                            await writer.WriteAsync("+OK\r\n");
+                            Console.WriteLine("Client disconnected");
+                            break; // It will also dispose the stream 
+                            
+                        }
+
+                        var response = ToRESP(str);
+                        await writer.WriteAsync(response);
                         
                     }
+                    else if (result is IEnumerable<string> list)
+                    {
+                        var response = ToRESP(list);
+                        await writer.WriteAsync(response);
+                    }
 
-                    var response = ToRESP(result);
-                    await writer.WriteAsync(response);
+                   
                 }
                 catch (Exception ex) 
                 {
@@ -117,7 +129,7 @@ namespace Zedis
             }
         }
 
-        private string ProcessCommand(List<string> parts)
+        private object ProcessCommand(List<string> parts)
         {
             
             if (parts.Count == 0) return "ERR uknown command";
@@ -142,9 +154,18 @@ namespace Zedis
                 "CONFIG" when parts.Count >= 2 => HandleConfig(parts),
                 "APPEND" when parts.Count >=3 => _dataStore.Append(parts[1], string.Join(' ', parts.Skip(2))),
                 "STRLEN" when parts.Count == 2 => _dataStore.Strlen(parts[1]),
+                "MSET" when parts.Count >= 5 => _dataStore.MSet(parts.Skip(1)),
+                "MGET" when parts.Count >= 2 => _dataStore.MGet(parts.Skip(1)),
+                "SETEX" when parts.Count >= 4 => _dataStore.Setex(parts[1], parts[2], parts[3]),
+                "SETNX" when parts.Count >= 3 => _dataStore.Setnx(parts[1], string.Join(' ', parts.Skip(2))),
+   
+                
                 _ => "ERR unknown or invalid command"
             };
+
+            
         }
+
         
         //*3\r\n$3\r\nSET\r\n$4\r\nname\r\n$5\r\nMarko\r\n
         private async Task<List<string>> ParseRESP(StreamReader reader)
@@ -209,6 +230,26 @@ namespace Zedis
             }
 
             return $"${result.Length}\r\n{result}\r\n";
+        }
+
+        private string ToRESP(IEnumerable<string> results) 
+        {
+            // Start an array of length N
+            var sb = new StringBuilder();
+            sb.Append($"*{results.Count()}\r\n");
+
+            foreach (var item in results) 
+            {
+                if (item == "(nil)") 
+                {
+                    sb.Append("$-1\r\n");
+                }
+                else{
+                   sb.Append($"${item.Length}\r\n{item}\r\n"); 
+                }
+            }
+
+            return sb.ToString();
         }
 
 

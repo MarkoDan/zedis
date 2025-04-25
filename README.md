@@ -25,7 +25,7 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 **Labels:** phase:1-core, enhancement
 ```
 
-- [] Zedis configuration file
+- [X] Zedis configuration file
 ```
 
 ---
@@ -56,7 +56,8 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ```
 - [X] APPEND
 - [X] STRLEN
-- [ ] MSET, MGET
+- [X] MSET,
+- [ ] MGET,
 - [ ] SETEX, SETNX, GETSET
 - [ ] INCRBY, DECR, DECRBY
 ```
