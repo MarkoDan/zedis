@@ -58,8 +58,9 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 - [X] STRLEN
 - [X] MSET,
 - [ ] MGET,
-- [ ] SETEX, SETNX, GETSET
-- [ ] INCRBY, DECR, DECRBY
+- [X] SETEX, SETNX, GETSET
+- [ ] GETSET
+- [X] INCRBY, DECR, DECRBY
 ```
 
 ---
@@ -69,8 +70,8 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ### Issue: Lists
 **Labels:** phase:4-datatypes, feature
 ```
-- [ ] LPUSH, RPUSH
-- [ ] LPOP, RPOP
+- [X] LPUSH, RPUSH
+- [X] LPOP, RPOP
 - [ ] LRANGE, LLEN
 ```
 

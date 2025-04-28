@@ -158,6 +158,13 @@ namespace Zedis
                 "MGET" when parts.Count >= 2 => _dataStore.MGet(parts.Skip(1)),
                 "SETEX" when parts.Count >= 4 => _dataStore.Setex(parts[1], parts[2], parts[3]),
                 "SETNX" when parts.Count >= 3 => _dataStore.Setnx(parts[1], string.Join(' ', parts.Skip(2))),
+                "INCRBY" when parts.Count >= 3 => _dataStore.IncrBy(parts[1], parts[2]),
+                "DECR" when parts.Count == 2 => _dataStore.Decr(parts[1]),
+                "DECRBY" when parts.Count >= 3 => _dataStore.DecrBy(parts[1], parts[2]),
+                "LPUSH" when parts.Count >= 3 => _dataStore.LPush(parts.Skip(1).ToList()),
+                "RPUSH" when parts.Count >= 3 => _dataStore.RPush(parts.Skip(1).ToList()),
+                "LPOP" when parts.Count >= 2 => _dataStore.LPop(parts.Skip(1).ToList()),
+                "RPOP" when parts.Count >= 2 => _dataStore.RPop(parts.Skip(1).ToList()),
    
                 
                 _ => "ERR unknown or invalid command"

@@ -103,3 +103,36 @@ SETNX mykey Hello
 SETNX mykey WOrld
 GEty mykey
 GET mykey
+SET key 10
+INCRBY key 5
+GET key
+SET key 10
+INCRBY key 5
+GET key
+set key 10
+SET key 10
+DECR key
+SET key 10
+DECRBY key 5
+DECRBY key 1
+QUIT
+LPUSH list world
+LPUSH list hello
+RPUSH mylist one two three
+LPOP myist
+LPOP mylist
+QUIT
+RPUSH mylist one two three
+RPUSH one two three
+LPOP one
+RPUSH mylist one two three
+LPOP mylist
+LPOP mylist 2
+RPUSH mylist one two three four five
+RPOP mylist
+RPUSH mylist one two three four five
+RPOP mylist
+RPOP mylist 2
+RPOP mylist 0 -1
+RPOP mylist 0 -5
+RPOP mylist 1 2

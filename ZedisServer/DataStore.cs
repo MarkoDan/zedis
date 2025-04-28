@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace Zedis
     {
         private readonly ConcurrentDictionary<string, string> _store = new();
         private readonly ConcurrentDictionary<string, DateTime> _expireStore = new();
+        private ConcurrentDictionary<string, LinkedList<string>> _lists = new();
         private readonly object _lock = new();
 
         public string Set(string key, string value)
@@ -301,6 +303,211 @@ namespace Zedis
             }
             
         }
+
+        public string IncrBy(string key, string incrValue)
+        {
+            int intIncrValue = int.Parse(incrValue);
+            if(_store.TryGetValue(key, out _)) 
+            {
+                if(int.TryParse(_store[key], out var value))
+                {
+                    value += intIncrValue;
+                    _store[key] = value.ToString();
+                    return value.ToString();
+                }
+                return "ERR value is not an integer";
+            }
+            return "ERR key does not exists";
+
+        }
+
+        public string Decr(string key)
+        {
+            if(_store.TryGetValue(key, out var valueStr))
+            {
+                if(int.TryParse(valueStr, out var value))
+                {
+                    lock(_lock)
+                    {
+                        value--;
+                        _store[key] = value.ToString();
+                        return value.ToString();
+                    }
+                    
+                }
+                else
+                {
+                    return "ERR value is not an integer";
+                }
+            }
+            return "key does not exists";
+        }
+
+        public string DecrBy(string key, string decrValue)
+        {
+            int intDecrValue = int.Parse(decrValue);
+            if(_store.TryGetValue(key, out var valueStr))
+            {
+                if(int.TryParse(valueStr, out var value))
+                {
+                    lock(_lock)
+                    {
+                        value -= intDecrValue;
+                        _store[key] = value.ToString();
+                        return value.ToString();
+                    }
+                    
+                }
+                else
+                {
+                    return "ERR value is not an integer";
+                }
+
+            }
+            return "key does not exists";
+        }
+
+        public string LPush(List<string> arguments)
+        {
+            string key = arguments[0];
+            var values = arguments.Skip(1);
+
+            var list = _lists.GetOrAdd(key, _ => new LinkedList<string>());
+
+            foreach (var value in values)
+            {
+                list.AddFirst(value);
+            }
+
+            return list.Count.ToString();
+
+        }
+
+        public string RPush(List<string> arguments)
+        {
+            string key = arguments[0];
+            var values = arguments.Skip(1);
+
+            var list = _lists.GetOrAdd(key, _ => new LinkedList<string>());
+
+            foreach (var value in values)
+            {
+                list.AddLast(value);
+            }
+
+            return list.Count.ToString();
+        }
+
+        public object LPop(List<string> args)
+        {
+           string key = args[0];
+           int count = 1;
+
+           if(args.Count == 2) 
+           {
+                if(!int.TryParse(args[1], out count))
+                {
+                    return "ERR invalid count";
+                }
+           }
+
+           if (!_lists.TryGetValue(key, out var list))
+           {
+                return "(nil)";
+           }
+           if (list.Count == 0)
+           {
+                return "(nil)";
+           }
+           if (count == 1)
+           {
+                var value = list.First.Value ;
+                list.RemoveFirst();
+                return value;
+           }
+           else
+           {
+                var result = new List<string>();
+                while (count-- > 0 && list.Count > 0)
+                {
+                    result.Add(list.First.Value);
+                    list.RemoveFirst();
+                }
+                return result;
+           }
+        }
+
+        public object RPop(List<string> args)
+        {
+           string key = args[0];
+           int count = 1;
+
+           if(args.Count == 2) 
+           {
+                if(!int.TryParse(args[1], out count))
+                {
+                    return "ERR invalid count";
+                }
+           }
+
+           if (!_lists.TryGetValue(key, out var list))
+           {
+                return "(nil)";
+           }
+           if (list.Count == 0)
+           {
+                return "(nil)";
+           }
+           if (count == 1)
+           {
+                var value = list.Last.Value;
+                list.RemoveLast();
+                return value;
+           }
+           else
+           {
+                var result = new List<string>();
+                while (count-- > 0 && list.Count > 0)
+                {
+                    result.Add(list.Last.Value);
+                    list.RemoveLast();
+                }
+                return result;
+           }
+        }
+
+        public object LRange(string key, string value1, string value2)
+        {
+            int start = int.Parse(value1);
+            int end = int.Parse(value2);
+
+            if(!_lists.TryGetValue(key, out var list))
+            {
+                return "(nil)";
+            }
+
+            if (end == -1)
+            {
+                end = list.Count - 1;
+            }
+            
+            List<string> result = new List<string>();
+            int currentIndex = 0;
+
+            foreach (var item in list)
+            {
+                if (currentIndex >= start && currentIndex <= end)
+                {
+                    result.Add(item);
+                    
+                }
+                currentIndex++;
+            }
+
+            return result;
+
+        }
+
         
     }
 }
