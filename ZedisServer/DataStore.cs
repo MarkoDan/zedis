@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -16,6 +18,8 @@ namespace Zedis
         private readonly ConcurrentDictionary<string, string> _store = new();
         private readonly ConcurrentDictionary<string, DateTime> _expireStore = new();
         private ConcurrentDictionary<string, LinkedList<string>> _lists = new();
+        private ConcurrentDictionary<string, HashSet<string>> _sets = new();
+        private readonly ConcurrentDictionary<string, Dictionary<string, string>> _hashes = new();
         private readonly object _lock = new();
 
         public string Set(string key, string value)
@@ -506,6 +510,95 @@ namespace Zedis
 
             return result;
 
+        }
+
+        public string LLen(string key) 
+        {
+            if(!_lists.TryGetValue(key, out var list))
+            {
+                return "ERR list does not exists";
+            }
+            int listLen = list.Count;
+            return listLen.ToString();
+        }
+
+        public string Sadd(List<string> args)
+        {
+            string key = args[0];
+            var values = args.Skip(1);
+
+            var set = _sets.GetOrAdd(key, _ => new HashSet<string>());
+
+            int added = 0;
+            foreach (var value in values)
+            {
+                if (set.Add(value))
+                {
+                    added++;
+                }
+            }
+            return added.ToString();
+
+        }
+
+        public string Srem(List<string> args)
+        {
+            string key = args[0];
+            var values = args.Skip(1);
+
+            int removed = 0;
+
+            if (!_sets.TryGetValue(key, out var set))
+            {
+                return "0";
+            }
+            foreach(var value in values)
+            {
+                if(set.Remove(value))
+                {
+                    removed++;
+                }
+            }
+            return removed.ToString();
+        }
+
+        public object Smembers(string key) 
+        {
+            if(_sets.TryGetValue(key, out var set))
+            {
+                List<string> results = [];
+                foreach (var value in set)
+                {   
+                    results.Add(value);
+                }
+                return results;
+                
+            }
+            return "ERR set does not exists";
+        }
+
+        public string Scard(string key)
+        {
+            if(_sets.TryGetValue(key, out var set))
+            {
+                return set.Count().ToString();
+            }
+
+            return "ERR set does not exists";
+            
+        }
+
+        public string SisMember(string key, string value)
+        {
+            if (_sets.TryGetValue(key, out var set))
+            {
+                if(set.Contains(value))
+                {
+                    return "1";
+                }
+                return "0";
+            }
+            return "ERR set does not exists";
         }
 
         

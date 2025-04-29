@@ -136,3 +136,14 @@ RPOP mylist 2
 RPOP mylist 0 -1
 RPOP mylist 0 -5
 RPOP mylist 1 2
+LPUSH mylist World
+LPUSH mylist Hello
+LPUSH mylist Hi Jim
+LLEN mylist
+SADD myset Hello World
+SADD myset Hello World
+SADD myset World
+SADD myset Hello World
+SADD myset Hello
+SADD myset Hellow
+SADD myset Hellow

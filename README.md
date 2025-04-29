@@ -72,14 +72,14 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ```
 - [X] LPUSH, RPUSH
 - [X] LPOP, RPOP
-- [ ] LRANGE, LLEN
+- [X] LRANGE, LLEN
 ```
 
 ### Issue: Sets
 **Labels:** phase:4-datatypes, feature
 ```
-- [ ] SADD, SREM
-- [ ] SMEMBERS, SCARD, SISMEMBER
+- [X] SADD, SREM
+- [X] SMEMBERS, SCARD, SISMEMBER
 ```
 
 ### Issue: Hashes

@@ -165,7 +165,11 @@ namespace Zedis
                 "RPUSH" when parts.Count >= 3 => _dataStore.RPush(parts.Skip(1).ToList()),
                 "LPOP" when parts.Count >= 2 => _dataStore.LPop(parts.Skip(1).ToList()),
                 "RPOP" when parts.Count >= 2 => _dataStore.RPop(parts.Skip(1).ToList()),
-   
+                "LLEN" when parts.Count == 2 => _dataStore.LLen(parts[1]),
+                "SADD" when parts.Count >= 2 => _dataStore.Sadd(parts.Skip(1).ToList()),
+                "SREM" when parts.Count >= 2 => _dataStore.Sadd(parts.Skip(1).ToList()),
+                "SMEMBERS" when parts.Count == 2 => _dataStore.Smembers(parts[1]),
+                "SCARD" when parts.Count == 2 => _dataStore.Scard(parts[1]),
                 
                 _ => "ERR unknown or invalid command"
             };
