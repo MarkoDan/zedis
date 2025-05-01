@@ -85,7 +85,7 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ### Issue: Hashes
 **Labels:** phase:4-datatypes, feature
 ```
-- [ ] HSET, HGET
+- [X] HSET, HGET
 - [ ] HDEL, HGETALL, HLEN
 ```
 

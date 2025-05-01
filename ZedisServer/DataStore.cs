@@ -601,6 +601,54 @@ namespace Zedis
             return "ERR set does not exists";
         }
 
+        public string Hset(List<string> args)
+        {
+            string hashKey = args[0];
+
+            if(!_hashes.TryGetValue(hashKey, out var hashDict))
+            {
+                hashDict = new Dictionary<string, string>();
+                _hashes[hashKey] = hashDict;
+            }
+
+            int added = 0;
+            for (int i = 1; i < args.Count; i += 2)
+            {
+                string field = args[i];
+                string value = args[i + 1];
+
+                if(!hashDict.ContainsKey(field))
+                {
+                    added++;
+                }
+
+                hashDict[field] = value;
+            }
+
+            return added.ToString();
+        }
+
+        public string Hget(string key, string field)
+        {
+            if(_hashes.TryGetValue(key, out var hashDict))
+            {
+                if (hashDict.TryGetValue(field, out var value))
+                {
+                    return value;
+                }
+                return "(nil)";
+            }
+            return "ERR hash does not exists";
+        }
+
+        public string Hdel(string key, string field)
+        {
+            if (_hashes.TryGetValue(key, out var hashDict))
+            {
+                return hashDict.Remove(field) ? "1" : "0";
+            }
+            return "ERR hash does not exists";
+        }
         
     }
 }

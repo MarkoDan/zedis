@@ -170,6 +170,9 @@ namespace Zedis
                 "SREM" when parts.Count >= 2 => _dataStore.Sadd(parts.Skip(1).ToList()),
                 "SMEMBERS" when parts.Count == 2 => _dataStore.Smembers(parts[1]),
                 "SCARD" when parts.Count == 2 => _dataStore.Scard(parts[1]),
+                "HSET" when parts.Count >= 3 => _dataStore.Hset(parts.Skip(1).ToList()),
+                "HGET" when parts.Count >= 2 => _dataStore.Hget(parts[1], parts[2]),
+                "HDEL" when parts.Count >= 2 => _dataStore.Hdel(parts[1], parts[2]),
                 
                 _ => "ERR unknown or invalid command"
             };
