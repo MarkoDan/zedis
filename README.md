@@ -86,7 +86,7 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 **Labels:** phase:4-datatypes, feature
 ```
 - [X] HSET, HGET
-- [ ] HDEL, HGETALL, HLEN
+- [X] HDEL, HGETALL, HLEN
 ```
 
 ---
@@ -96,8 +96,8 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ### Issue: Implement pub/sub
 **Labels:** phase:5-pubsub, feature
 ```
-- [ ] SUBSCRIBE, UNSUBSCRIBE
-- [ ] PUBLISH
+- [X] SUBSCRIBE, UNSUBSCRIBE
+- [X] PUBLISH
 - [ ] Maintain channel-to-client map
 ```
 

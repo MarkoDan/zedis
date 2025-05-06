@@ -34,17 +34,38 @@ public class Program
             var result = ToRESP(command);
             writer.Write(result);
             writer.Flush();
-            var response = ParseRESPResponse(reader);
-            if (response == null)
+
+            if (command.Trim().StartsWith("SUBSCRIBE", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("Connection closed by server.");
-                break;
+                Console.WriteLine("Subscribed. Waiting for messages... (Press Ctrl+C to exit)");
+
+                while (true)
+                {
+                    var response = ParseRESPResponse(reader);
+                    if (response == null)
+                    {
+                        Console.WriteLine("Connection closed by server.");
+                        break;
+                    }
+
+                    Console.WriteLine(response);
+                }
+
+                break; // Exit after SUBSCRIBE loop (optional)
             }
+            else
+            {
+                var response = ParseRESPResponse(reader);
+                if (response == null)
+                {
+                    Console.WriteLine("Connection closed by server.");
+                    break;
+                }
 
-            Console.WriteLine(response);
+                Console.WriteLine(response);
 
-            if (command.Trim().ToUpper() == "QUIT" && response == "OK"){
-                break;
+                if (command.Trim().ToUpper() == "QUIT" && response == "OK")
+                    break;
             }
         }
 
@@ -52,6 +73,7 @@ public class Program
         reader.Close();
         client.Close();
     }
+
 
     public static string ToRESP(string command) 
     {

@@ -147,3 +147,27 @@ SADD myset Hello World
 SADD myset Hello
 SADD myset Hellow
 SADD myset Hellow
+HSET myhash field1 Hello
+HSET myhash field2 World
+HGETALL myhash
+HGET myhash field1
+HGET myhash field2
+HDEL myhash field1
+HDEL myhash field3
+HGETALL myhash
+HSET myhash field1 Hello
+HLEN myhash
+HSET myhash field2 Hello
+HLEN myhash
+HSET myhash field3 Hello
+HLEN myhash
+HSET myhash field2 Hello
+HLEN myhash
+HSET myhash field1 Hello
+HGETALL myhash
+HLEN myhash
+SUBSCRIBE mychannel
+PUBLISH mychannel HelloWorld
+PUBLISH mychannel HelloWorld again
+SUBSCRIBE a b c
+PUBLISH a hey do you read this message?

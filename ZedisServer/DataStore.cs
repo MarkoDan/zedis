@@ -649,6 +649,32 @@ namespace Zedis
             }
             return "ERR hash does not exists";
         }
+
+        public object HgetAll(string key) 
+        {
+            if (_hashes.TryGetValue(key, out var hashDict))
+            {
+                List<string> dict = new List<string>();
+                foreach (var KeyValuePair in hashDict) 
+                {
+                    string field = KeyValuePair.Key;
+                    string value = KeyValuePair.Value;
+                    dict.Add(field);
+                    dict.Add(value);
+                }
+                return dict;
+            }
+            return "ERR hash does not exists";
+        }
+
+        public string Hlen(string key) 
+        {
+            if (_hashes.TryGetValue(key, out var hashDict)) 
+            {
+                return hashDict.Count.ToString();
+            }
+            return "0";
+        }
         
     }
 }

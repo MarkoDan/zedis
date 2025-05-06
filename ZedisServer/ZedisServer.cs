@@ -8,6 +8,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
@@ -23,6 +25,10 @@ namespace Zedis
         private readonly DataStore _dataStore = new DataStore();
         private readonly Dictionary<string, string> _config = new();
         private bool _appendOnlyEnabled = true;
+        // private readonly ConcurrentDictionary<string, List<StreamWriter>> _subscriptions = new();
+        private readonly ConcurrentDictionary<string, List<StreamWriter>> _channels = new();
+        private readonly object _channelLock = new(); // for thread-safe list modification
+
         
 
         
@@ -97,7 +103,24 @@ namespace Zedis
                         continue;
                     }
 
-                    var result = ProcessCommand(parts);
+                    // Check if parts is Subscribe command
+                    // If it is run the method that will handle the subscription
+                    // Disable command input
+                    // Enable recieving messages and broadcasting it to all connected clients except the sender
+                    if (parts[0].ToUpper() == "SUBSCRIBE") 
+                    {
+                        await HandleSubscription(parts.Skip(1), writer, client);
+                    }
+                    else if (parts[0].ToUpper() == "UNSUBSCRIBE") 
+                    {
+                        foreach (var channel in parts.Skip(1)) 
+                        {
+                            Unsubscribe(channel, writer);
+                        }
+                    }
+
+
+                    var result = await ProcessCommand(parts);
                     
                     if (result is string str)
                     {
@@ -129,7 +152,7 @@ namespace Zedis
             }
         }
 
-        private object ProcessCommand(List<string> parts)
+        private async Task<object> ProcessCommand(List<string> parts)
         {
             
             if (parts.Count == 0) return "ERR uknown command";
@@ -167,12 +190,16 @@ namespace Zedis
                 "RPOP" when parts.Count >= 2 => _dataStore.RPop(parts.Skip(1).ToList()),
                 "LLEN" when parts.Count == 2 => _dataStore.LLen(parts[1]),
                 "SADD" when parts.Count >= 2 => _dataStore.Sadd(parts.Skip(1).ToList()),
-                "SREM" when parts.Count >= 2 => _dataStore.Sadd(parts.Skip(1).ToList()),
+                "SREM" when parts.Count >= 2 => _dataStore.Srem(parts.Skip(1).ToList()),
                 "SMEMBERS" when parts.Count == 2 => _dataStore.Smembers(parts[1]),
                 "SCARD" when parts.Count == 2 => _dataStore.Scard(parts[1]),
                 "HSET" when parts.Count >= 3 => _dataStore.Hset(parts.Skip(1).ToList()),
                 "HGET" when parts.Count >= 2 => _dataStore.Hget(parts[1], parts[2]),
                 "HDEL" when parts.Count >= 2 => _dataStore.Hdel(parts[1], parts[2]),
+                "HGETALL" when parts.Count == 2 => _dataStore.HgetAll(parts[1]),
+                "HLEN" when parts.Count == 2 => _dataStore.Hlen(parts[1]),
+                "PUBLISH" when parts.Count >= 3 => await Publish(parts[1], string.Join(' ', parts.Skip(2))),
+
                 
                 _ => "ERR unknown or invalid command"
             };
@@ -321,6 +348,111 @@ namespace Zedis
             File.WriteAllLines("zedis.conf", lines);
         }
 
+
+        private async Task HandleSubscription(IEnumerable<string> channels, StreamWriter writer, TcpClient client)
+        {
+            try
+            {
+                foreach (var channel in channels) 
+                {
+                    Subscribe(channel, writer);
+                    int subCount;
+                    lock(_channelLock) 
+                    {
+                       subCount = _channels[channel].Count;
+                    }
+                    
+                    var response = $"*3\r\n$9\r\nsubscribe\r\n${channel.Length}\r\n{channel}\r\n:{_channels[channel].Count}\r\n";
+                    await writer.WriteAsync(response);
+                    await writer.FlushAsync();                    
+
+                }
+
+                // Keep the stream alive so server cna write PUBLISH messages to writer
+                while (client.Connected) 
+                {
+                    await Task.Delay(1000);
+                }
+
+            }
+            catch 
+            {
+                // On error or disconnect, remove writer from all channels
+                lock(_channelLock) 
+                {
+                    foreach(var list in _channels.Values) 
+                    {
+                        list.Remove(writer);
+                    }
+                }
+            }
+        }
+
+        private string Subscribe(string channel, StreamWriter writer)
+        {
+            lock (_channelLock) 
+            {
+                if(!_channels.ContainsKey(channel)) 
+                {
+                    _channels[channel] = new List<StreamWriter>();
+                }
+                if (!_channels[channel].Contains(writer)) 
+                {
+                    _channels[channel].Add(writer);
+                }
+                
+            }
+            
+            return $"Subscribed to {channel}";
+        }
+
+        private string Unsubscribe(string channel, StreamWriter writer) 
+        {
+            lock (_channelLock) 
+            {
+                if(_channels.TryGetValue(channel, out var subscribers)) 
+                {
+                    subscribers.Remove(writer);
+
+                    //Clean up empty channels
+                    if (subscribers.Count == 0) 
+                    {
+                        _channels.TryRemove(channel, out var _);
+                    }
+                }
+            }
+            
+            return $"Unsubscribed to {channel}";
+        }
+
+        private async Task<string> Publish(string channel, string message) 
+        {
+            int count = 0;
+    
+                if(_channels.TryGetValue(channel, out var subscribers)) 
+                {
+                    var respMessage = $"*3\r\n$7\r\nmessage\r\n${channel.Length}\r\n{channel}\r\n${message.Length}\r\n{message}\r\n";
+
+                    foreach (var subscriber in subscribers.ToList())
+                    {
+                        try
+                        {
+                            
+                            await subscriber.WriteAsync(respMessage);
+                            await subscriber.FlushAsync();
+                            count++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[WARN] Error sending to subscriber: {ex.Message}");
+                            subscribers.Remove(subscriber);
+                        }   
+
+                    }
+            }
+
+            return count.ToString();
+        }
         
     }
 }
