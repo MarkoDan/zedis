@@ -98,7 +98,7 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ```
 - [X] SUBSCRIBE, UNSUBSCRIBE
 - [X] PUBLISH
-- [ ] Maintain channel-to-client map
+- [X] Maintain channel-to-client map
 ```
 
 ---

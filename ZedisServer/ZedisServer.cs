@@ -428,31 +428,49 @@ namespace Zedis
         private async Task<string> Publish(string channel, string message) 
         {
             int count = 0;
-    
-                if(_channels.TryGetValue(channel, out var subscribers)) 
+            List<StreamWriter> subscribersCopy;
+
+            lock (_channelLock)
+            {
+                if (!_channels.TryGetValue(channel, out var subscribers))
+                    return "0";
+
+                subscribersCopy = subscribers.ToList(); // copy the list safely
+            }
+
+            var respMessage = $"*3\r\n$7\r\nmessage\r\n${channel.Length}\r\n{channel}\r\n${message.Length}\r\n{message}\r\n";
+
+            foreach (var subscriber in subscribersCopy)
+            {
+                try
                 {
-                    var respMessage = $"*3\r\n$7\r\nmessage\r\n${channel.Length}\r\n{channel}\r\n${message.Length}\r\n{message}\r\n";
+                    await subscriber.WriteAsync(respMessage);
+                    await subscriber.FlushAsync();
+                    count++;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WARN] Failed to publish to a subscriber: {ex.Message}");
 
-                    foreach (var subscriber in subscribers.ToList())
+                    // Remove broken subscriber inside a safe lock
+                    lock (_channelLock)
                     {
-                        try
+                        if (_channels.TryGetValue(channel, out var subscribers))
                         {
-                            
-                            await subscriber.WriteAsync(respMessage);
-                            await subscriber.FlushAsync();
-                            count++;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[WARN] Error sending to subscriber: {ex.Message}");
                             subscribers.Remove(subscriber);
-                        }   
 
+                            if (subscribers.Count == 0)
+                            {
+                                _channels.TryRemove(channel, out _);
+                            }
+                        }
                     }
+                }
             }
 
             return count.ToString();
         }
+
         
     }
 }
