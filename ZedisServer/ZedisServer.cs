@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
+using ZedisServer.Services;
 
 namespace Zedis
 {
@@ -23,11 +24,13 @@ namespace Zedis
         private int _port;
         private TcpListener ?_listener;
         private readonly DataStore _dataStore = new DataStore();
+        IHashingService hashingService = new HashingService();
         private readonly Dictionary<string, string> _config = new();
         private bool _appendOnlyEnabled = true;
         // private readonly ConcurrentDictionary<string, List<StreamWriter>> _subscriptions = new();
         private readonly ConcurrentDictionary<string, List<StreamWriter>> _channels = new();
         private readonly object _channelLock = new(); // for thread-safe list modification
+        private readonly ConcurrentDictionary<TcpClient, bool> _authenticatedClients = new();
 
         
 
@@ -44,6 +47,7 @@ namespace Zedis
             {
                 _port = defaultPort;
             }
+
 
             _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
@@ -89,7 +93,46 @@ namespace Zedis
             {
                 try
                 {
+                    
+
                     List<string> parts = await ParseRESP(reader);
+
+                    if (_config.TryGetValue("requirepass", out var storedHash) && !string.IsNullOrEmpty(storedHash) &&
+                        (!_authenticatedClients.TryGetValue(client, out var isAuthed) || !isAuthed))
+                    {
+                        if (parts.Count == 0 || string.IsNullOrEmpty(parts[0])) 
+                        {
+                            await writer.WriteAsync("-ERR empty command\r\n");
+                            continue;
+                        }
+
+                        if (parts[0].ToUpper() != "AUTH") 
+                        {
+                            await writer.WriteAsync("-NOAUTH Authentication required.\r\n");
+                            continue;
+                        }
+                        else 
+                        {
+                            if (parts.Count != 2) 
+                            {
+                                await writer.WriteAsync("-ERR wrong number of arguments.\r\n");
+                                continue;
+                            }
+
+                            
+                            if (_config.TryGetValue("requirepass", out var storedPasswordHash) &&  hashingService.VerifyPassword(parts[1], storedPasswordHash)) 
+                            {
+                                _authenticatedClients[client] = true;
+                                await writer.WriteAsync("+OK\r\n");
+                            }
+                            else
+                            {
+                                await writer.WriteAsync("-ERR invalid password\r\n");
+                            }
+
+                            continue;
+                        }
+                    }
                     // Appending commands in aof file
                     if (_appendOnlyEnabled) 
                     {
@@ -150,6 +193,8 @@ namespace Zedis
                     break;
                 }
             }
+
+            _authenticatedClients.TryRemove(client, out _);
         }
 
         private async Task<object> ProcessCommand(List<string> parts)
@@ -329,6 +374,14 @@ namespace Zedis
             {
                 var key = parts[2].ToLower();
                 var value = parts[3];
+                
+                if (key == "requirepass") 
+                {
+                    // Hash the password before storing
+                    value = hashingService.PasswordHashing(value);
+                }
+                
+                
                 _config[key] = value;
 
                 if (key == "appendonly"){
@@ -471,6 +524,7 @@ namespace Zedis
             return count.ToString();
         }
 
-        
+
+
     }
 }

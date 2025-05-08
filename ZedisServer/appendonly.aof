@@ -171,3 +171,6 @@ PUBLISH mychannel HelloWorld
 PUBLISH mychannel HelloWorld again
 SUBSCRIBE a b c
 PUBLISH a hey do you read this message?
+HGET myhash
+SET value gg
+GET value
