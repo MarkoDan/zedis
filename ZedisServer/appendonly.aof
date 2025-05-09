@@ -174,3 +174,16 @@ PUBLISH a hey do you read this message?
 HGET myhash
 SET value gg
 GET value
+CONFIG SET requirepass mysecret
+PING
+INFO
+INFO
+INFO
+INFO
+INFO
+INFO
+SET name Marko
+GET name
+PING
+CLIENT LIST
+CLIENT LIST

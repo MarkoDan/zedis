@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.VisualBasic;
+using ZedisServer.Models;
 using ZedisServer.Services;
 
 namespace Zedis
@@ -31,6 +32,8 @@ namespace Zedis
         private readonly ConcurrentDictionary<string, List<StreamWriter>> _channels = new();
         private readonly object _channelLock = new(); // for thread-safe list modification
         private readonly ConcurrentDictionary<TcpClient, bool> _authenticatedClients = new();
+        private readonly ConcurrentDictionary<TcpClient, ClientInfo> _clientInfos = new();
+        private int _nextClientId = 1;
 
         
 
@@ -89,6 +92,17 @@ namespace Zedis
             var reader = new StreamReader(stream, Encoding.UTF8);
             var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
 
+            var endpoint = client.Client.RemoteEndPoint?.ToString() ?? "unknown";
+            var info = new ClientInfo 
+            {
+                Id = Interlocked.Increment(ref _nextClientId),
+                Address = endpoint,
+                ConnectedAt = DateTime.UtcNow,
+                LastActive = DateTime.UtcNow
+            };
+
+            _clientInfos[client] = info; 
+
             while (true) 
             {
                 try
@@ -120,14 +134,23 @@ namespace Zedis
                             }
 
                             
-                            if (_config.TryGetValue("requirepass", out var storedPasswordHash) &&  hashingService.VerifyPassword(parts[1], storedPasswordHash)) 
+                            if (_config.TryGetValue("requirepass", out var storedPassword)) 
                             {
-                                _authenticatedClients[client] = true;
-                                await writer.WriteAsync("+OK\r\n");
-                            }
-                            else
-                            {
-                                await writer.WriteAsync("-ERR invalid password\r\n");
+
+                                bool isValid = IsHashed(storedPassword)
+                                    ? hashingService.VerifyPassword(parts[1], storedPassword)
+                                    : parts[1] == storedPassword;
+                                
+                                if (isValid) 
+                                {
+                                    _authenticatedClients[client] = true;
+                                    await writer.WriteAsync("+OK\r\n");
+                                }
+                                 else
+                                {
+                                    await writer.WriteAsync("-ERR invalid password\r\n");
+                                }
+                                
                             }
 
                             continue;
@@ -164,6 +187,11 @@ namespace Zedis
 
 
                     var result = await ProcessCommand(parts);
+
+                    if (_clientInfos.TryGetValue(client, out var clientInfo)) 
+                    {
+                        clientInfo.LastActive = DateTime.UtcNow;
+                    }
                     
                     if (result is string str)
                     {
@@ -195,6 +223,7 @@ namespace Zedis
             }
 
             _authenticatedClients.TryRemove(client, out _);
+            _clientInfos.TryRemove(client, out _);
         }
 
         private async Task<object> ProcessCommand(List<string> parts)
@@ -244,6 +273,8 @@ namespace Zedis
                 "HGETALL" when parts.Count == 2 => _dataStore.HgetAll(parts[1]),
                 "HLEN" when parts.Count == 2 => _dataStore.Hlen(parts[1]),
                 "PUBLISH" when parts.Count >= 3 => await Publish(parts[1], string.Join(' ', parts.Skip(2))),
+                "INFO" => GetServerInfoLines(),
+                "CLIENT" when parts.Count == 2 && parts[1].ToUpper() == "LIST" => GetClientList(),
 
                 
                 _ => "ERR unknown or invalid command"
@@ -524,7 +555,35 @@ namespace Zedis
             return count.ToString();
         }
 
+        private bool IsHashed(string value) => Convert.TryFromBase64String(value, new Span<byte>(new byte[64]), out _);
 
+
+        private IEnumerable<string> GetServerInfoLines() 
+        {
+            yield return "# Server";
+            yield return $"zedis_version:1.0";
+            yield return $"tcp_port:{_port}";
+            yield return $"appendonly:{_appendOnlyEnabled.ToString().ToLower()}";
+
+            yield return "# Clients";
+            yield return $"connected_clients:{_authenticatedClients.Count}";
+
+            yield return "# PubSub";
+            yield return $"pubsub_channels:{_channels.Count}";
+
+            yield return "# Config";
+            foreach (var kvp in _config)
+            {
+                yield return $"config_{kvp.Key}:{kvp.Value}";
+            }
+        }
+
+        private IEnumerable<string> GetClientList() 
+        {
+            return _clientInfos.Values.Select(info =>
+                $"id={info.Id} addr={info.Address} age={(int)(DateTime.UtcNow - info.ConnectedAt).TotalSeconds} " +
+                $"idle={(int)(DateTime.UtcNow - info.LastActive).TotalSeconds} sub={info.Subscriptions}");
+        }
 
     }
 }

@@ -108,21 +108,21 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 ### Issue: Auth and security
 **Labels:** phase:6-auth, security
 ```
-- [ ] AUTH <password>
-- [ ] Add zedis.conf for config
+- [X] AUTH <password>
+- [X] Add zedis.conf for config
 ```
 
 ### Issue: Info and config
 **Labels:** phase:6-admin, enhancement
 ```
-- [ ] INFO
-- [ ] CONFIG GET/SET
+- [X] INFO
+- [X] CONFIG GET/SET
 ```
 
 ### Issue: Client commands
 **Labels:** phase:6-admin, feature
 ```
-- [ ] CLIENT LIST
+- [X] CLIENT LIST
 - [ ] CLIENT ID
 ```
 
