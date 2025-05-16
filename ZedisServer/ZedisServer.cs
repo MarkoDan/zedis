@@ -67,7 +67,7 @@ namespace Zedis
                     foreach (var line in File.ReadLines("appendonly.aof"))
                     {
                         var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
-                        ProcessCommand(parts);
+                        ProcessCommand(parts, null);
                     }
                 }
             }
@@ -186,7 +186,7 @@ namespace Zedis
                     }
 
 
-                    var result = await ProcessCommand(parts);
+                    var result = await ProcessCommand(parts, client);
 
                     if (_clientInfos.TryGetValue(client, out var clientInfo)) 
                     {
@@ -226,7 +226,7 @@ namespace Zedis
             _clientInfos.TryRemove(client, out _);
         }
 
-        private async Task<object> ProcessCommand(List<string> parts)
+        private async Task<object> ProcessCommand(List<string> parts, TcpClient currentClient)
         {
             
             if (parts.Count == 0) return "ERR uknown command";
@@ -275,6 +275,7 @@ namespace Zedis
                 "PUBLISH" when parts.Count >= 3 => await Publish(parts[1], string.Join(' ', parts.Skip(2))),
                 "INFO" => GetServerInfoLines(),
                 "CLIENT" when parts.Count == 2 && parts[1].ToUpper() == "LIST" => GetClientList(),
+                "CLIENT" when parts.Count == 2 && parts[1].ToUpper() == "ID" => currentClient != null ? GetClientId(currentClient) : "(nil)",
 
                 
                 _ => "ERR unknown or invalid command"
@@ -583,6 +584,15 @@ namespace Zedis
             return _clientInfos.Values.Select(info =>
                 $"id={info.Id} addr={info.Address} age={(int)(DateTime.UtcNow - info.ConnectedAt).TotalSeconds} " +
                 $"idle={(int)(DateTime.UtcNow - info.LastActive).TotalSeconds} sub={info.Subscriptions}");
+        }
+
+        private string GetClientId(TcpClient client) {
+
+            return _clientInfos.TryGetValue(client, out var info) 
+                ? info.Id.ToString()
+                : "-1";
+                
+            
         }
 
     }

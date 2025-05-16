@@ -123,7 +123,7 @@ Use these to create issues on GitHub manually or via the GitHub CLI. Each issue 
 **Labels:** phase:6-admin, feature
 ```
 - [X] CLIENT LIST
-- [ ] CLIENT ID
+- [X] CLIENT ID
 ```
 
 ---
